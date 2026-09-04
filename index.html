@@ -70,21 +70,25 @@
   .letter-btn{aspect-ratio:1; display:flex; align-items:center; justify-content:center; background:var(--surface); border:1px solid var(--border); border-radius:12px; font-size:20px; font-weight:700; cursor:pointer;}
   .letter-btn:active{transform:scale(.92);}
 
-  .big-letter{font-size:64px; font-weight:900; color:var(--gold); text-align:center; margin:4px 0 4px;}
-  .cat-field{margin-bottom:12px;}
-  .cat-field label{display:flex; align-items:center; gap:6px; font-size:14px; color:var(--text); margin-bottom:5px;}
-  .cat-field input{margin-bottom:0;}
-  .elapsed{font-family:'JetBrains Mono',monospace; direction:ltr; color:var(--text-dim); text-align:center; font-size:13px; margin-bottom:10px;}
+  .big-letter{font-size:46px; font-weight:900; color:var(--gold); text-align:center; margin:0 0 2px;}
+  .cat-field{margin-bottom:9px;}
+  .cat-field label{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text); margin-bottom:4px;}
+  .cat-field input{margin-bottom:0; padding:10px 12px; font-size:15px;}
+  .elapsed{font-family:'JetBrains Mono',monospace; direction:ltr; color:var(--text-dim); text-align:center; font-size:12px; margin-bottom:8px;}
 
   .review-cat{margin-bottom:16px;}
   .review-cat h4{margin:0 0 8px; font-size:14.5px; color:var(--text-dim); display:flex; align-items:center; gap:6px;}
-  .review-row{display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 12px; margin-bottom:6px;}
+  .review-row{display:flex; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 12px; margin-bottom:6px;}
+  .review-row-top{display:flex; align-items:center; justify-content:space-between;}
   .review-row .word{font-size:15px;}
   .review-row .who{font-size:12px; color:var(--text-dim); margin-inline-start:6px;}
   .review-toggle{width:26px; height:26px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; flex-shrink:0;}
   .review-toggle.valid{background:rgba(52,214,196,0.15); border-color:#34D6C4; color:#34D6C4;}
   .review-toggle.invalid{background:rgba(255,93,93,0.15); border-color:var(--coral); color:var(--coral);}
   .empty-word{color:var(--text-dim); font-style:italic; font-size:13px;}
+  .reaction-row{display:flex; gap:6px;}
+  .reaction-btn{font-size:12.5px; padding:4px 9px; border-radius:12px; background:var(--bg-soft); border:1px solid var(--border); color:var(--text-dim); cursor:pointer; display:flex; align-items:center; gap:4px;}
+  .reaction-btn.active{border-color:var(--gold); color:var(--gold); background:rgba(245,185,66,0.1);}
 
   table.score-table{width:100%; border-collapse:collapse; font-size:13.5px;}
   table.score-table th{color:var(--text-dim); font-weight:500; text-align:center; padding:6px 4px; border-bottom:1px solid var(--border);}
@@ -169,12 +173,11 @@
   </div>
 
   <!-- PLAY -->
-  <div class="screen" id="screen-play">
+  <div class="screen" id="screen-play" style="padding-top:14px;">
     <div class="eyebrow" style="text-align:center;">الحرف المطلوب</div>
     <div class="big-letter" id="play-letter">أ</div>
     <div class="elapsed" id="play-elapsed">00:00</div>
     <div id="play-fields"></div>
-    <div class="spacer"></div>
     <button class="btn btn-rose" id="btn-stop">قلت STOP! 🛑</button>
   </div>
 
@@ -491,14 +494,7 @@
     if (round.starterId === myId){
       letterPickerWrap.style.display = 'block';
       letterWaitWrap.style.display = 'none';
-      letterGrid.innerHTML = '';
-      LETTERS.forEach(function(l){
-        var b = document.createElement('div');
-        b.className = 'letter-btn';
-        b.textContent = l;
-        b.addEventListener('click', function(){ pickLetter(l, round); });
-        letterGrid.appendChild(b);
-      });
+      renderLetterGrid();
     } else {
       letterPickerWrap.style.display = 'none';
       letterWaitWrap.style.display = 'block';
@@ -506,7 +502,45 @@
     }
   }
 
+  async function renderLetterGrid(){
+    var used = (await fbGet(fbPath('rooms', roomCode, 'usedLetters'))) || {};
+    var remaining = LETTERS.filter(function(l){ return !used[l]; });
+    letterGrid.innerHTML = '';
+
+    if (remaining.length === 0){
+      var msg = document.createElement('p');
+      msg.className = 'sub';
+      msg.style.textAlign = 'center';
+      msg.style.gridColumn = '1 / -1';
+      msg.textContent = 'تم استخدام كل الحروف! يمكنكم إعادة تدويرها للمتابعة.';
+      letterGrid.appendChild(msg);
+      var resetBtn = document.createElement('button');
+      resetBtn.className = 'btn btn-ghost';
+      resetBtn.style.gridColumn = '1 / -1';
+      resetBtn.textContent = 'إعادة تدوير الحروف 🔁';
+      resetBtn.addEventListener('click', async function(){
+        await fbSet(fbPath('rooms', roomCode, 'usedLetters'), {});
+        renderLetterGrid();
+      });
+      letterGrid.appendChild(resetBtn);
+      return;
+    }
+
+    remaining.forEach(function(l){
+      var b = document.createElement('div');
+      b.className = 'letter-btn';
+      b.textContent = l;
+      b.addEventListener('click', function(){
+        fbGet(fbPath('rooms', roomCode, 'round')).then(function(currentRound){
+          pickLetter(l, currentRound);
+        });
+      });
+      letterGrid.appendChild(b);
+    });
+  }
+
   async function pickLetter(letter, round){
+    await fbSet(fbPath('rooms', roomCode, 'usedLetters', letter), true);
     await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {
       phase:'playing', letter:letter, playingStartAt: Date.now()
     }));
@@ -602,8 +636,9 @@
   async function refreshReviewView(round, force){
     var data = await fbGet(fbPath('rooms', roomCode, 'review', round.round));
     if (!data) return;
-    if (!force && reviewCache && JSON.stringify(reviewCache)===JSON.stringify(data) && !isHost) return;
     reviewCache = data;
+    var reactions = (await fbGet(fbPath('rooms', roomCode, 'reactions', round.round))) || {};
+
     reviewLetterEl.textContent = data.letter;
     reviewRoleMsg.textContent = isHost
       ? 'راجعوا الإجابات بصوت عالٍ، وألغِ أي إجابة غير صحيحة قبل حساب النقاط.'
@@ -627,13 +662,16 @@
         var word = (ans[ci]||'').trim();
         var row = document.createElement('div');
         row.className = 'review-row';
+
+        var top = document.createElement('div');
+        top.className = 'review-row-top';
         var left = document.createElement('div');
         if (word){
           left.innerHTML = '<span class="word">'+escapeHtml(word)+'</span><span class="who"> — '+escapeHtml(p.name)+'</span>';
         } else {
           left.innerHTML = '<span class="empty-word">بدون إجابة</span><span class="who"> — '+escapeHtml(p.name)+'</span>';
         }
-        row.appendChild(left);
+        top.appendChild(left);
         var valid = validityToShow[ci][p.id] && !!word;
         var toggle = document.createElement('div');
         toggle.className = 'review-toggle ' + (valid ? 'valid' : 'invalid');
@@ -644,11 +682,45 @@
             refreshReviewView(round, true);
           });
         }
-        row.appendChild(toggle);
+        top.appendChild(toggle);
+        row.appendChild(top);
+
+        if (word){
+          var answerKey = ci+'_'+p.id;
+          var rx = reactions[answerKey] || {};
+          var laughCount = 0, annoyCount = 0, myLaugh=false, myAnnoy=false;
+          Object.keys(rx).forEach(function(k){
+            if (k.endsWith('_laugh')) laughCount++;
+            if (k.endsWith('_annoy')) annoyCount++;
+            if (k === myId+'_laugh') myLaugh = true;
+            if (k === myId+'_annoy') myAnnoy = true;
+          });
+          var reactRow = document.createElement('div');
+          reactRow.className = 'reaction-row';
+          var laughBtn = document.createElement('div');
+          laughBtn.className = 'reaction-btn' + (myLaugh ? ' active' : '');
+          laughBtn.innerHTML = '😂 أضحكني' + (laughCount ? ' ('+laughCount+')' : '');
+          laughBtn.addEventListener('click', function(){ toggleReaction(round, answerKey, 'laugh'); });
+          var annoyBtn = document.createElement('div');
+          annoyBtn.className = 'reaction-btn' + (myAnnoy ? ' active' : '');
+          annoyBtn.innerHTML = '😠 أزعجني' + (annoyCount ? ' ('+annoyCount+')' : '');
+          annoyBtn.addEventListener('click', function(){ toggleReaction(round, answerKey, 'annoy'); });
+          reactRow.appendChild(laughBtn);
+          reactRow.appendChild(annoyBtn);
+          row.appendChild(reactRow);
+        }
+
         block.appendChild(row);
       });
       reviewBody.appendChild(block);
     });
+  }
+
+  async function toggleReaction(round, answerKey, type){
+    var path = fbPath('rooms', roomCode, 'reactions', round.round, answerKey, myId+'_'+type);
+    var current = await fbGet(path);
+    await fbSet(path, current ? null : true);
+    refreshReviewView(round, true);
   }
 
   function escapeHtml(s){
