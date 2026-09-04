@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>صبيان بنات 🧠</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#150E2B; --bg-soft:#1B1338; --surface:#241A4D; --surface-2:#2C2060;
+    --gold:#F5B942; --rose:#FF6FA5; --blue:#4EA1FF; --coral:#FF5D5D;
+    --text:#F4F1FA; --text-dim:#A79ECF; --border:rgba(244,241,250,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(255,111,165,0.09), transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(78,161,255,0.09), transparent 40%),
+      var(--bg);
+    color:var(--text); font-family:'Tajawal',sans-serif; min-height:100%;
+    display:flex; justify-content:center; -webkit-user-select:none; user-select:none;
+  }
+  #app{ width:100%; max-width:560px; min-height:100vh; display:flex; flex-direction:column; position:relative;}
+  .screen{display:none; flex-direction:column; flex:1; padding:26px 20px 20px; animation:fadeIn .3s ease;}
+  .screen.active{display:flex;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  h1{font-size:26px; font-weight:900; margin:0 0 6px;}
+  h1 span.dot{color:var(--gold);}
+  p.sub{color:var(--text-dim); font-size:14.5px; line-height:1.7; margin:0 0 18px;}
+  .eyebrow{color:var(--text-dim); font-size:12.5px; margin:0 0 4px;}
+  .center-screen{align-items:center; justify-content:center; text-align:center;}
+  .big-emoji{font-size:52px; margin-bottom:8px;}
+  .spacer{flex:1;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:12px;}
+  label{display:block; font-size:13px; color:var(--text-dim); margin:0 0 6px;}
+  input[type=text]{
+    width:100%; background:var(--bg-soft); border:1px solid var(--border); border-radius:12px;
+    color:var(--text); font-family:inherit; font-size:16px; padding:12px 14px; margin-bottom:12px;
+  }
+  input[type=text]:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  input.code-input{font-family:'JetBrains Mono',monospace; letter-spacing:4px; text-align:center; font-size:22px; direction:ltr; text-transform:uppercase;}
+
+  button.btn{appearance:none; border:none; border-radius:14px; padding:15px 18px; font-family:inherit; font-size:16px; font-weight:700; cursor:pointer; touch-action:manipulation; width:100%;}
+  .btn-primary{background:linear-gradient(135deg,var(--gold),#e0a533); color:#221600; box-shadow:0 6px 18px rgba(245,185,66,0.25);}
+  .btn-primary:disabled{opacity:.4; box-shadow:none;}
+  .btn-rose{background:linear-gradient(135deg,var(--rose),#d94f85); color:#3a0016;}
+  .btn-blue{background:linear-gradient(135deg,var(--blue),#2f7fd9); color:#001b3a;}
+  .btn-ghost{background:transparent; border:1px solid var(--border); color:var(--text);}
+  .btn-danger{background:transparent; border:1px solid rgba(255,93,93,0.4); color:var(--coral);}
+  .btn-row{display:flex; gap:10px; margin-top:10px;}
+  .btn-row > button{flex:1;}
+
+  .choice-cards{display:flex; flex-direction:column; gap:12px;}
+  .choice-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; cursor:pointer; text-align:center;}
+  .choice-card .emoji{font-size:30px; margin-bottom:6px;}
+  .choice-card h3{margin:0 0 4px; font-size:17px;}
+  .choice-card p{margin:0; color:var(--text-dim); font-size:13px;}
+
+  .room-code{font-family:'JetBrains Mono',monospace; font-size:38px; font-weight:700; letter-spacing:6px; text-align:center; color:var(--gold); direction:ltr; margin:6px 0 4px;}
+  .player-chip-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .player-chip{background:var(--surface-2); border:1px solid var(--border); border-radius:20px; padding:8px 14px; font-size:14px; display:flex; align-items:center; gap:6px;}
+  .player-chip.host::before{content:'👑'; font-size:12px;}
+  .player-chip.me{border-color:var(--gold); color:var(--gold);}
+
+  .letter-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:10px;}
+  .letter-btn{aspect-ratio:1; display:flex; align-items:center; justify-content:center; background:var(--surface); border:1px solid var(--border); border-radius:12px; font-size:20px; font-weight:700; cursor:pointer;}
+  .letter-btn:active{transform:scale(.92);}
+
+  .big-letter{font-size:64px; font-weight:900; color:var(--gold); text-align:center; margin:4px 0 4px;}
+  .cat-field{margin-bottom:12px;}
+  .cat-field label{display:flex; align-items:center; gap:6px; font-size:14px; color:var(--text); margin-bottom:5px;}
+  .cat-field input{margin-bottom:0;}
+  .elapsed{font-family:'JetBrains Mono',monospace; direction:ltr; color:var(--text-dim); text-align:center; font-size:13px; margin-bottom:10px;}
+
+  .review-cat{margin-bottom:16px;}
+  .review-cat h4{margin:0 0 8px; font-size:14.5px; color:var(--text-dim); display:flex; align-items:center; gap:6px;}
+  .review-row{display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 12px; margin-bottom:6px;}
+  .review-row .word{font-size:15px;}
+  .review-row .who{font-size:12px; color:var(--text-dim); margin-inline-start:6px;}
+  .review-toggle{width:26px; height:26px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; flex-shrink:0;}
+  .review-toggle.valid{background:rgba(52,214,196,0.15); border-color:#34D6C4; color:#34D6C4;}
+  .review-toggle.invalid{background:rgba(255,93,93,0.15); border-color:var(--coral); color:var(--coral);}
+  .empty-word{color:var(--text-dim); font-style:italic; font-size:13px;}
+
+  table.score-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.score-table th{color:var(--text-dim); font-weight:500; text-align:center; padding:6px 4px; border-bottom:1px solid var(--border);}
+  table.score-table td{padding:8px 4px; text-align:center; border-bottom:1px solid var(--border);}
+  table.score-table tr:last-child td{border-bottom:none;}
+  table.score-table td:first-child, table.score-table th:first-child{text-align:right;}
+
+  .leader-row{display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px;}
+  .leader-row.top{border-color:var(--gold); background:rgba(245,185,66,0.08);}
+  .leader-rank{font-family:'JetBrains Mono',monospace; color:var(--text-dim); width:26px;}
+  .leader-name{flex:1; font-weight:700; font-size:15px;}
+  .leader-score{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); direction:ltr;}
+
+  .toast{position:fixed; top:16px; left:50%; transform:translateX(-50%); background:var(--surface-2); border:1px solid var(--border); color:var(--text); padding:10px 18px; border-radius:20px; font-size:13.5px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:60; max-width:90%; text-align:center;}
+  .toast.show{opacity:1;}
+  a.link-btn{color:var(--blue); font-size:14px; text-align:center; cursor:pointer; margin-top:10px;}
+  .conn-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#34D6C4; margin-inline-start:6px;}
+  .conn-dot.bad{background:var(--coral);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="big-emoji" style="text-align:center;">🧠🎉</div>
+    <h1 style="text-align:center;">صبيان بنات<span class="dot">.</span></h1>
+    <p class="sub" style="text-align:center;">العبوا معاً من هواتف مختلفة في نفس الوقت! أنشئ غرفة أو انضم إلى غرفة موجودة.</p>
+    <div class="choice-cards">
+      <div class="choice-card" id="card-create">
+        <div class="emoji">🏠</div>
+        <h3>إنشاء غرفة جديدة</h3>
+        <p>كن المضيف وشارك الرمز مع البقية</p>
+      </div>
+      <div class="choice-card" id="card-join">
+        <div class="emoji">🔑</div>
+        <h3>الانضمام إلى غرفة</h3>
+        <p>أدخل الرمز الذي شاركه المضيف معك</p>
+      </div>
+    </div>
+    <div id="home-form" style="display:none; margin-top:16px;">
+      <div class="card">
+        <label>اسمك (استخدم نفس الاسم دائماً للعودة بنقاطك)</label>
+        <input type="text" id="input-name" placeholder="مثال: أحمد" maxlength="16">
+        <div id="join-code-wrap" style="display:none;">
+          <label>رمز الغرفة</label>
+          <input type="text" id="input-code" class="code-input" placeholder="XXXX" maxlength="4">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-go" disabled>متابعة</button>
+      <p class="sub" id="home-error" style="color:var(--coral); display:none; text-align:center; margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="screen" id="screen-lobby">
+    <div class="eyebrow">رمز الغرفة (شاركه مع البقية)</div>
+    <div class="room-code" id="lobby-code">----</div>
+    <p class="sub" style="text-align:center;">كل شخص يفتح هذه الصفحة على هاتفه ويدخل نفس الرمز للانضمام.</p>
+    <div class="card">
+      <label>اللاعبون المنضمّون (<span id="lobby-count">0</span>)</label>
+      <div class="player-chip-list" id="lobby-players"></div>
+    </div>
+    <p class="sub" id="lobby-wait-msg" style="text-align:center;">بانتظار المضيف لبدء اللعبة...</p>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="btn-start-round" style="display:none;" disabled>ابدأ الجولة الأولى 🎲</button>
+  </div>
+
+  <!-- LETTER PHASE -->
+  <div class="screen center-screen" id="screen-letter">
+    <div id="letter-picker-wrap" style="display:none; width:100%;">
+      <div class="big-emoji">✍️</div>
+      <h1 style="text-align:center;">اختر حرفاً</h1>
+      <p class="sub" style="text-align:center;">سيبحث الجميع عن كلمات تبدأ بهذا الحرف</p>
+      <div class="letter-grid" id="letter-grid"></div>
+    </div>
+    <div id="letter-wait-wrap" style="display:none;">
+      <div class="big-emoji">⏳</div>
+      <h1 id="letter-wait-title"></h1>
+      <p class="sub">استعدوا للكتابة بأسرع ما يمكن!</p>
+    </div>
+  </div>
+
+  <!-- PLAY -->
+  <div class="screen" id="screen-play">
+    <div class="eyebrow" style="text-align:center;">الحرف المطلوب</div>
+    <div class="big-letter" id="play-letter">أ</div>
+    <div class="elapsed" id="play-elapsed">00:00</div>
+    <div id="play-fields"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-rose" id="btn-stop">قلت STOP! 🛑</button>
+  </div>
+
+  <!-- WAITING AFTER SUBMIT -->
+  <div class="screen center-screen" id="screen-wait-submit">
+    <div class="big-emoji">📨</div>
+    <h1>تم إرسال إجاباتك!</h1>
+    <p class="sub" id="wait-submit-sub">بانتظار بقية اللاعبين...</p>
+  </div>
+
+  <!-- REVIEW -->
+  <div class="screen" id="screen-review">
+    <div class="eyebrow">مراجعة الإجابات — الحرف: <b id="review-letter"></b></div>
+    <h1 style="font-size:20px;">راجعوا معاً وحدّدوا الصحيح ✅</h1>
+    <p class="sub" id="review-role-msg"></p>
+    <div id="review-body" style="flex:1; overflow:auto;"></div>
+    <button class="btn btn-primary" id="btn-compute-scores" style="display:none;">احسب النقاط النهائية 🧮</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="screen" id="screen-results">
+    <div class="eyebrow" id="results-eyebrow">نتيجة الجولة</div>
+    <h1 id="results-title" style="font-size:21px;"></h1>
+    <div class="card" style="overflow:auto;">
+      <div id="results-table-wrap"></div>
+    </div>
+    <label style="margin-top:4px;">الترتيب العام</label>
+    <div id="results-leaderboard"></div>
+    <div class="spacer"></div>
+    <div id="host-results-actions" style="display:none;">
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-end-game">إنهاء اللعبة 🏁</button>
+        <button class="btn btn-primary" id="btn-next-round">جولة جديدة 🔁</button>
+      </div>
+    </div>
+    <p class="sub" id="results-wait-msg" style="text-align:center; display:none;">بانتظار المضيف...</p>
+  </div>
+
+  <!-- FINAL -->
+  <div class="screen center-screen" id="screen-final">
+    <div class="big-emoji">🏆</div>
+    <h1 id="final-title"></h1>
+    <div id="final-leaderboard" style="width:100%; margin-top:14px;"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="btn-back-home">لعبة جديدة 🔁</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ======== Firebase Realtime Database (REST, no SDK needed) ========
+  var DB_URL = 'https://sobyan-banat-game-default-rtdb.europe-west1.firebasedatabase.app';
+
+  function fbPath(){
+    return Array.prototype.slice.call(arguments).map(function(s){ return encodeURIComponent(String(s)); }).join('/');
+  }
+  async function fbGet(path){
+    try{
+      var res = await fetch(DB_URL + '/' + path + '.json');
+      if (!res.ok) return null;
+      return await res.json();
+    }catch(e){ console.error('fbGet failed', path, e); return null; }
+  }
+  async function fbSet(path, value){
+    try{
+      var res = await fetch(DB_URL + '/' + path + '.json', {
+        method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(value)
+      });
+      return res.ok;
+    }catch(e){ console.error('fbSet failed', path, e); return false; }
+  }
+
+  var CATS = [
+    {key:'boy',  label:'اسم ولد', icon:'👦'},
+    {key:'girl', label:'اسم بنت', icon:'👧'},
+    {key:'country', label:'بلد', icon:'🌍'},
+    {key:'food', label:'فاكهة أو خضار', icon:'🍎'},
+    {key:'thing', label:'جماد', icon:'🪑'}
+  ];
+  var LETTERS = 'ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي'.split(' ');
+  var POLL_MS = 1500;
+
+  function genCode(){
+    var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s='';
+    for (var i=0;i<4;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return s;
+  }
+  function slugifyName(name){
+    var s = (name||'').trim().replace(/[.#$\/\[\]]/g, '_');
+    if (!s) s = 'p'+Math.random().toString(36).slice(2,7);
+    return s;
+  }
+  function normAlif(ch){ return ('أإآا'.indexOf(ch)>=0) ? 'ا' : ch; }
+  function normWord(w){ return (w||'').trim().toLowerCase().replace(/[أإآ]/g,'ا'); }
+  function startsWithLetter(word, letter){
+    var w=(word||'').trim();
+    if (!w) return false;
+    return normAlif(w[0]) === normAlif(letter);
+  }
+
+  // ---------- app / session state ----------
+  var myId = '';
+  var myName = '';
+  var roomCode = '';
+  var isHost = false;
+  var lastPhase = null;
+  var lastRound = 0;
+  var submitted = false;
+  var reviewValidity = null;
+  var reviewCache = null;
+  var playersCache = [];
+  var pollHandle = null;
+  var playStartAt = null;
+  var elapsedHandle = null;
+  var pendingAnswers = ['','','','',''];
+
+  var screens = {};
+  document.querySelectorAll('.screen').forEach(function(el){ screens[el.id]=el; });
+  function show(id){
+    Object.keys(screens).forEach(function(k){ screens[k].classList.toggle('active', k===id); });
+    window.scrollTo(0,0);
+  }
+  var toastEl = document.getElementById('toast');
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+  }
+
+  // ---------- HOME ----------
+  var cardCreate = document.getElementById('card-create');
+  var cardJoin = document.getElementById('card-join');
+  var homeForm = document.getElementById('home-form');
+  var joinCodeWrap = document.getElementById('join-code-wrap');
+  var inputName = document.getElementById('input-name');
+  var inputCode = document.getElementById('input-code');
+  var btnGo = document.getElementById('btn-go');
+  var homeError = document.getElementById('home-error');
+  var mode = null;
+
+  cardCreate.addEventListener('click', function(){
+    mode = 'create';
+    joinCodeWrap.style.display = 'none';
+    homeForm.style.display = 'block';
+    homeError.style.display = 'none';
+    checkHomeReady();
+  });
+  cardJoin.addEventListener('click', function(){
+    mode = 'join';
+    joinCodeWrap.style.display = 'block';
+    homeForm.style.display = 'block';
+    homeError.style.display = 'none';
+    checkHomeReady();
+  });
+  function checkHomeReady(){
+    var ok = inputName.value.trim().length>0;
+    if (mode==='join') ok = ok && inputCode.value.trim().length===4;
+    btnGo.disabled = !ok;
+  }
+  inputName.addEventListener('input', checkHomeReady);
+  inputCode.addEventListener('input', function(){
+    inputCode.value = inputCode.value.toUpperCase();
+    checkHomeReady();
+  });
+
+  btnGo.addEventListener('click', async function(){
+    myName = inputName.value.trim();
+    myId = slugifyName(myName);
+    btnGo.disabled = true;
+    homeError.style.display = 'none';
+
+    if (mode === 'create'){
+      roomCode = genCode();
+      isHost = true;
+      var ok1 = await fbSet(fbPath('rooms', roomCode, 'info'), {hostId:myId, hostName:myName, createdAt:Date.now()});
+      var ok2 = await fbSet(fbPath('rooms', roomCode, 'players', myId), {name:myName, joinedAt:Date.now()});
+      if (!ok1 || !ok2){
+        homeError.textContent = 'تعذّر الاتصال بقاعدة البيانات. تأكد من صحة الرابط في الكود.';
+        homeError.style.display = 'block';
+        btnGo.disabled = false;
+        return;
+      }
+      enterLobby();
+    } else {
+      var code = inputCode.value.trim().toUpperCase();
+      var info = await fbGet(fbPath('rooms', code, 'info'));
+      if (!info){
+        homeError.textContent = 'لم يتم العثور على غرفة بهذا الرمز';
+        homeError.style.display = 'block';
+        btnGo.disabled = false;
+        return;
+      }
+      roomCode = code;
+      isHost = (info.hostId === myId);
+      await fbSet(fbPath('rooms', roomCode, 'players', myId), {name:myName, joinedAt:Date.now()});
+      enterLobby();
+    }
+  });
+
+  // ---------- LOBBY ----------
+  var lobbyCode = document.getElementById('lobby-code');
+  var lobbyCount = document.getElementById('lobby-count');
+  var lobbyPlayers = document.getElementById('lobby-players');
+  var lobbyWaitMsg = document.getElementById('lobby-wait-msg');
+  var btnStartRound = document.getElementById('btn-start-round');
+
+  function enterLobby(){
+    lobbyCode.textContent = roomCode;
+    btnStartRound.style.display = isHost ? 'block' : 'none';
+    lobbyWaitMsg.style.display = isHost ? 'none' : 'block';
+    show('screen-lobby');
+    startPolling();
+  }
+
+  async function refreshPlayers(){
+    var obj = await fbGet(fbPath('rooms', roomCode, 'players'));
+    var list = [];
+    if (obj){
+      Object.keys(obj).forEach(function(id){
+        list.push({id:id, name:obj[id].name, joinedAt:obj[id].joinedAt});
+      });
+    }
+    list.sort(function(a,b){ return a.joinedAt - b.joinedAt; });
+    playersCache = list;
+    return list;
+  }
+
+  function renderLobby(list){
+    lobbyCount.textContent = list.length;
+    lobbyPlayers.innerHTML = '';
+    list.forEach(function(p){
+      var chip = document.createElement('div');
+      chip.className = 'player-chip' + (p.id===myId?' me':'');
+      chip.textContent = p.name + (p.id===myId?' (أنت)':'');
+      lobbyPlayers.appendChild(chip);
+    });
+    if (isHost){
+      btnStartRound.disabled = list.length < 2;
+    }
+  }
+
+  btnStartRound.addEventListener('click', async function(){
+    var list = await refreshPlayers();
+    if (list.length < 2) { toast('يلزم لاعبان على الأقل'); return; }
+    var starter = list[Math.floor(Math.random()*list.length)];
+    await fbSet(fbPath('rooms', roomCode, 'round'), {
+      round:1, phase:'choosing', starterId:starter.id, starterName:starter.name,
+      letter:null, stopPressedBy:null, stopAt:null, playingStartAt:null
+    });
+  });
+
+  // ---------- POLLING / STATE MACHINE ----------
+  function startPolling(){
+    if (pollHandle) clearInterval(pollHandle);
+    pollHandle = setInterval(pollTick, POLL_MS);
+    pollTick();
+  }
+
+  async function pollTick(){
+    if (!roomCode) return;
+    if (screens['screen-lobby'].classList.contains('active')){
+      var list = await refreshPlayers();
+      renderLobby(list);
+    }
+    var round = await fbGet(fbPath('rooms', roomCode, 'round'));
+    if (!round) return;
+
+    if (round.phase !== lastPhase || round.round !== lastRound){
+      lastPhase = round.phase;
+      lastRound = round.round;
+      submitted = false;
+      handlePhaseChange(round);
+    } else if (round.phase === 'stopped' && !submitted){
+      handlePhaseChange(round);
+    }
+
+    if (isHost && round.phase === 'stopped'){
+      await hostMaybeAdvanceToReview(round);
+    }
+    if (round.phase === 'reviewing'){
+      await refreshReviewView(round);
+    }
+  }
+
+  async function handlePhaseChange(round){
+    if (round.phase === 'choosing'){
+      showLetterPhase(round);
+    } else if (round.phase === 'playing'){
+      startPlayScreen(round);
+    } else if (round.phase === 'stopped'){
+      await autoSubmit(round);
+    } else if (round.phase === 'reviewing'){
+      show('screen-review');
+      await refreshReviewView(round, true);
+    } else if (round.phase === 'results'){
+      await showResultsScreen(round);
+    } else if (round.phase === 'ended'){
+      await showFinalScreen();
+    }
+  }
+
+  // ---------- LETTER PHASE ----------
+  var letterPickerWrap = document.getElementById('letter-picker-wrap');
+  var letterWaitWrap = document.getElementById('letter-wait-wrap');
+  var letterWaitTitle = document.getElementById('letter-wait-title');
+  var letterGrid = document.getElementById('letter-grid');
+
+  function showLetterPhase(round){
+    show('screen-letter');
+    if (round.starterId === myId){
+      letterPickerWrap.style.display = 'block';
+      letterWaitWrap.style.display = 'none';
+      letterGrid.innerHTML = '';
+      LETTERS.forEach(function(l){
+        var b = document.createElement('div');
+        b.className = 'letter-btn';
+        b.textContent = l;
+        b.addEventListener('click', function(){ pickLetter(l, round); });
+        letterGrid.appendChild(b);
+      });
+    } else {
+      letterPickerWrap.style.display = 'none';
+      letterWaitWrap.style.display = 'block';
+      letterWaitTitle.textContent = 'بانتظار ' + round.starterName + ' لاختيار الحرف...';
+    }
+  }
+
+  async function pickLetter(letter, round){
+    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {
+      phase:'playing', letter:letter, playingStartAt: Date.now()
+    }));
+  }
+
+  // ---------- PLAY ----------
+  var playLetter = document.getElementById('play-letter');
+  var playFields = document.getElementById('play-fields');
+  var playElapsed = document.getElementById('play-elapsed');
+  var btnStop = document.getElementById('btn-stop');
+
+  function startPlayScreen(round){
+    playLetter.textContent = round.letter;
+    pendingAnswers = ['','','','',''];
+    playFields.innerHTML = '';
+    CATS.forEach(function(cat, i){
+      var wrap = document.createElement('div');
+      wrap.className = 'cat-field';
+      var lbl = document.createElement('label');
+      lbl.innerHTML = '<span>'+cat.icon+'</span><span>'+cat.label+'</span>';
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.maxLength = 24;
+      inp.addEventListener('input', function(){ pendingAnswers[i] = inp.value; });
+      wrap.appendChild(lbl);
+      wrap.appendChild(inp);
+      playFields.appendChild(wrap);
+    });
+    playStartAt = round.playingStartAt || Date.now();
+    show('screen-play');
+    if (elapsedHandle) clearInterval(elapsedHandle);
+    elapsedHandle = setInterval(function(){
+      var s = Math.floor((Date.now()-playStartAt)/1000);
+      var m = Math.floor(s/60); var ss = s%60;
+      playElapsed.textContent = (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss;
+    }, 250);
+  }
+
+  btnStop.addEventListener('click', async function(){
+    var round = await fbGet(fbPath('rooms', roomCode, 'round'));
+    if (!round || round.phase !== 'playing') return;
+    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {
+      phase:'stopped', stopPressedBy:myId, stopAt:Date.now()
+    }));
+  });
+
+  async function autoSubmit(round){
+    if (submitted) return;
+    submitted = true;
+    if (elapsedHandle) clearInterval(elapsedHandle);
+    await fbSet(fbPath('rooms', roomCode, 'submissions', round.round, myId), {
+      name: myName, answers: pendingAnswers.slice(), submittedAt: Date.now()
+    });
+    document.getElementById('wait-submit-sub').textContent =
+      round.stopPressedBy === myId ? 'أنت من قال STOP! بانتظار إرسال البقية...' : 'قال أحدهم STOP! جارٍ إرسال الإجابات...';
+    show('screen-wait-submit');
+  }
+
+  // ---------- HOST: build review after stop ----------
+  var hostReviewBuilt = {};
+
+  async function hostMaybeAdvanceToReview(round){
+    var rk = round.round+'';
+    if (hostReviewBuilt[rk]) return;
+    var subs = await fbGet(fbPath('rooms', roomCode, 'submissions', round.round)) || {};
+    var count = Object.keys(subs).length;
+    var elapsedSinceStop = Date.now() - (round.stopAt||Date.now());
+    if (count < playersCache.length && elapsedSinceStop < 6000) return;
+    hostReviewBuilt[rk] = true;
+
+    var validity = {};
+    CATS.forEach(function(cat, ci){
+      validity[ci] = {};
+      playersCache.forEach(function(p){
+        var ans = (subs[p.id]||{}).answers || ['','','','',''];
+        var w = ans[ci]||'';
+        validity[ci][p.id] = startsWithLetter(w, round.letter);
+      });
+    });
+    await fbSet(fbPath('rooms', roomCode, 'review', round.round), {
+      letter: round.letter, submissions: subs, validity: validity,
+      players: playersCache.map(function(p){ return {id:p.id, name:p.name}; })
+    });
+    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {phase:'reviewing'}));
+  }
+
+  // ---------- REVIEW ----------
+  var reviewLetterEl = document.getElementById('review-letter');
+  var reviewRoleMsg = document.getElementById('review-role-msg');
+  var reviewBody = document.getElementById('review-body');
+  var btnComputeScores = document.getElementById('btn-compute-scores');
+
+  async function refreshReviewView(round, force){
+    var data = await fbGet(fbPath('rooms', roomCode, 'review', round.round));
+    if (!data) return;
+    if (!force && reviewCache && JSON.stringify(reviewCache)===JSON.stringify(data) && !isHost) return;
+    reviewCache = data;
+    reviewLetterEl.textContent = data.letter;
+    reviewRoleMsg.textContent = isHost
+      ? 'راجعوا الإجابات بصوت عالٍ، وألغِ أي إجابة غير صحيحة قبل حساب النقاط.'
+      : 'المضيف يراجع الإجابات الآن مع الجميع...';
+    btnComputeScores.style.display = isHost ? 'block' : 'none';
+
+    if (isHost && !reviewValidity){
+      reviewValidity = JSON.parse(JSON.stringify(data.validity));
+    }
+    var validityToShow = isHost ? reviewValidity : data.validity;
+
+    reviewBody.innerHTML = '';
+    CATS.forEach(function(cat, ci){
+      var block = document.createElement('div');
+      block.className = 'review-cat';
+      var h4 = document.createElement('h4');
+      h4.innerHTML = '<span>'+cat.icon+'</span><span>'+cat.label+'</span>';
+      block.appendChild(h4);
+      data.players.forEach(function(p){
+        var ans = (data.submissions[p.id]||{}).answers || ['','','','',''];
+        var word = (ans[ci]||'').trim();
+        var row = document.createElement('div');
+        row.className = 'review-row';
+        var left = document.createElement('div');
+        if (word){
+          left.innerHTML = '<span class="word">'+escapeHtml(word)+'</span><span class="who"> — '+escapeHtml(p.name)+'</span>';
+        } else {
+          left.innerHTML = '<span class="empty-word">بدون إجابة</span><span class="who"> — '+escapeHtml(p.name)+'</span>';
+        }
+        row.appendChild(left);
+        var valid = validityToShow[ci][p.id] && !!word;
+        var toggle = document.createElement('div');
+        toggle.className = 'review-toggle ' + (valid ? 'valid' : 'invalid');
+        toggle.textContent = valid ? '✓' : '✕';
+        if (isHost && word){
+          toggle.addEventListener('click', function(){
+            reviewValidity[ci][p.id] = !reviewValidity[ci][p.id];
+            refreshReviewView(round, true);
+          });
+        }
+        row.appendChild(toggle);
+        block.appendChild(row);
+      });
+      reviewBody.appendChild(block);
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  btnComputeScores.addEventListener('click', async function(){
+    var round = await fbGet(fbPath('rooms', roomCode, 'round'));
+    var data = await fbGet(fbPath('rooms', roomCode, 'review', round.round));
+    if (!round || !data) return;
+    var validity = reviewValidity || data.validity;
+
+    var perPlayerScores = {};
+    data.players.forEach(function(p){ perPlayerScores[p.id] = [0,0,0,0,0]; });
+
+    CATS.forEach(function(cat, ci){
+      var groups = {};
+      data.players.forEach(function(p){
+        if (!validity[ci][p.id]) return;
+        var ans = (data.submissions[p.id]||{}).answers || ['','','','',''];
+        var w = (ans[ci]||'');
+        var norm = normWord(w);
+        if (!norm) return;
+        if (!groups[norm]) groups[norm]=[];
+        groups[norm].push(p.id);
+      });
+      Object.keys(groups).forEach(function(norm){
+        var ids = groups[norm];
+        var score = ids.length===1 ? 1 : 0.5;
+        ids.forEach(function(id){ perPlayerScores[id][ci] = score; });
+      });
+    });
+
+    var totals = (await fbGet(fbPath('rooms', roomCode, 'totals'))) || {};
+    var roundResult = { letter: data.letter, players: data.players, submissions: data.submissions, scores: perPlayerScores };
+    data.players.forEach(function(p){
+      var roundTotal = perPlayerScores[p.id].reduce(function(a,b){return a+b;},0);
+      var prevScore = (totals[p.id] && totals[p.id].score) || 0;
+      totals[p.id] = { name: p.name, score: prevScore + roundTotal };
+    });
+
+    await fbSet(fbPath('rooms', roomCode, 'results', round.round), roundResult);
+    await fbSet(fbPath('rooms', roomCode, 'totals'), totals);
+    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {phase:'results'}));
+    reviewValidity = null;
+  });
+
+  // ---------- RESULTS ----------
+  var resultsTitle = document.getElementById('results-title');
+  var resultsTableWrap = document.getElementById('results-table-wrap');
+  var resultsLeaderboard = document.getElementById('results-leaderboard');
+  var hostResultsActions = document.getElementById('host-results-actions');
+  var resultsWaitMsg = document.getElementById('results-wait-msg');
+  var btnNextRound = document.getElementById('btn-next-round');
+  var btnEndGame = document.getElementById('btn-end-game');
+
+  async function showResultsScreen(round){
+    var result = await fbGet(fbPath('rooms', roomCode, 'results', round.round));
+    var totals = await fbGet(fbPath('rooms', roomCode, 'totals'));
+    if (!result) return;
+    resultsTitle.textContent = 'نتيجة الجولة ' + round.round + ' — حرف ' + result.letter;
+
+    var html = '<table class="score-table"><tr><th>اللاعب</th>';
+    CATS.forEach(function(cat){ html += '<th>'+cat.icon+'</th>'; });
+    html += '<th>المجموع</th></tr>';
+    result.players.forEach(function(p){
+      var scores = result.scores[p.id];
+      var sum = scores.reduce(function(a,b){return a+b;},0);
+      html += '<tr><td>'+escapeHtml(p.name)+'</td>';
+      scores.forEach(function(s){ html += '<td>'+ (s===0?'0':s) +'</td>'; });
+      html += '<td><b>'+sum+'</b></td></tr>';
+    });
+    html += '</table>';
+    resultsTableWrap.innerHTML = html;
+
+    renderLeaderboard(resultsLeaderboard, totals);
+
+    show('screen-results');
+    hostResultsActions.style.display = isHost ? 'block' : 'none';
+    resultsWaitMsg.style.display = isHost ? 'none' : 'block';
+  }
+
+  function renderLeaderboard(container, totals){
+    container.innerHTML = '';
+    var arr = [];
+    Object.keys(totals||{}).forEach(function(id){
+      arr.push({id:id, name: totals[id].name, score: totals[id].score});
+    });
+    arr.sort(function(a,b){ return b.score - a.score; });
+    arr.forEach(function(p, idx){
+      var row = document.createElement('div');
+      row.className = 'leader-row' + (idx===0?' top':'');
+      row.innerHTML = '<span class="leader-rank">#'+(idx+1)+'</span>'+
+        '<span class="leader-name">'+escapeHtml(p.name)+(p.id===myId?' (أنت)':'')+'</span>'+
+        '<span class="leader-score">'+p.score+'</span>';
+      container.appendChild(row);
+    });
+  }
+
+  btnNextRound.addEventListener('click', async function(){
+    var round = await fbGet(fbPath('rooms', roomCode, 'round'));
+    var list = await refreshPlayers();
+    var curIdx = list.findIndex(function(p){ return p.id === round.starterId; });
+    var next = list[(curIdx+1) % list.length];
+    hostReviewBuilt = {};
+    await fbSet(fbPath('rooms', roomCode, 'round'), {
+      round: round.round+1, phase:'choosing', starterId: next.id, starterName: next.name,
+      letter:null, stopPressedBy:null, stopAt:null, playingStartAt:null
+    });
+  });
+
+  btnEndGame.addEventListener('click', async function(){
+    var round = await fbGet(fbPath('rooms', roomCode, 'round'));
+    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {phase:'ended'}));
+  });
+
+  // ---------- FINAL ----------
+  var finalTitle = document.getElementById('final-title');
+  var finalLeaderboard = document.getElementById('final-leaderboard');
+
+  async function showFinalScreen(){
+    var totals = await fbGet(fbPath('rooms', roomCode, 'totals'));
+    var arr = [];
+    Object.keys(totals||{}).forEach(function(id){
+      arr.push({id:id, name: totals[id].name, score: totals[id].score});
+    });
+    arr.sort(function(a,b){ return b.score - a.score; });
+    finalTitle.textContent = arr.length ? ('مبروك يا ' + arr[0].name + '! 🏆') : 'انتهت اللعبة';
+    renderLeaderboard(finalLeaderboard, totals);
+    if (pollHandle) clearInterval(pollHandle);
+    show('screen-final');
+  }
+
+  document.getElementById('btn-back-home').addEventListener('click', function(){
+    roomCode=''; isHost=false; lastPhase=null; lastRound=0; submitted=false;
+    reviewValidity=null; reviewCache=null; playersCache=[]; hostReviewBuilt={};
+    inputName.value=''; inputCode.value=''; mode=null;
+    homeForm.style.display='none';
+    show('screen-home');
+  });
+
+})();
+</script>
+</body>
+</html>
