@@ -1,0 +1,134 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        "info": {
+          ".read": "auth != null",
+          ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid",
+          ".validate": "newData.hasChildren(['hostId', 'hostName', 'createdAt', 'version'])",
+          "hostId": {
+            ".validate": "newData.isString() && newData.val() === auth.uid"
+          },
+          "hostName": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 16"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "version": {
+            ".validate": "newData.val() === 2"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "players": {
+          ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('rooms').child($room).child('info').child('version').val() === 2 && newData.exists() && (data.exists() || !root.child('rooms').child($room).child('round').exists())",
+            ".validate": "newData.hasChildren(['name', 'joinedAt'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 16"
+            },
+            "joinedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "round": {
+          ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && newData.exists() && ((auth != null && root.child('rooms').child($room).child('info').child('hostId').val() === auth.uid) || (data.child('phase').val() === 'choosing' && data.child('starterId').val() === auth.uid && newData.child('phase').val() === 'playing' && newData.child('round').val() === data.child('round').val() && newData.child('starterId').val() === data.child('starterId').val() && newData.child('starterName').val() === data.child('starterName').val() && newData.child('stopPressedBy').val() === data.child('stopPressedBy').val() && newData.child('stopAt').val() === data.child('stopAt').val()) || (data.child('phase').val() === 'playing' && newData.child('phase').val() === 'stopped' && newData.child('stopPressedBy').val() === auth.uid && newData.child('round').val() === data.child('round').val() && newData.child('starterId').val() === data.child('starterId').val() && newData.child('starterName').val() === data.child('starterName').val() && newData.child('letter').val() === data.child('letter').val() && newData.child('playingStartAt').val() === data.child('playingStartAt').val()))",
+          ".validate": "newData.hasChildren(['round','phase','starterId','starterName']) && root.child('rooms').child($room).child('players').child(newData.child('starterId').val()).exists() && (newData.child('phase').val() !== 'playing' || newData.hasChildren(['letter','playingStartAt'])) && (newData.child('phase').val() !== 'stopped' || newData.hasChildren(['letter','playingStartAt','stopPressedBy','stopAt']))",
+          "round": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() % 1 === 0"
+          },
+          "phase": {
+            ".validate": "newData.val() === 'choosing' || newData.val() === 'playing' || newData.val() === 'stopped' || newData.val() === 'reviewing' || newData.val() === 'results' || newData.val() === 'ended'"
+          },
+          "starterId": {
+            ".validate": "newData.isString()"
+          },
+          "starterName": {
+            ".validate": "newData.isString() && newData.val().length <= 16"
+          },
+          "letter": {
+            ".validate": "newData.isString() && newData.val().length === 1"
+          },
+          "stopPressedBy": {
+            ".validate": "newData.isString()"
+          },
+          "stopAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "playingStartAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "usedLetters": {
+          ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && root.child('rooms').child($room).child('round').child('phase').val() === 'choosing' && root.child('rooms').child($room).child('round').child('starterId').val() === auth.uid",
+          "$letter": {
+            ".validate": "$letter.length === 1 && newData.val() === true"
+          }
+        },
+        "submissions": {
+          "$round": {
+            ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && ((auth != null && root.child('rooms').child($room).child('info').child('hostId').val() === auth.uid) || root.child('rooms').child($room).child('round').child('phase').val() === 'reviewing' || root.child('rooms').child($room).child('round').child('phase').val() === 'results' || root.child('rooms').child($room).child('round').child('phase').val() === 'ended')",
+            "$uid": {
+              ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && auth.uid === $uid",
+              ".write": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && auth.uid === $uid && !data.exists() && newData.exists() && $round === '' + root.child('rooms').child($room).child('round').child('round').val() && root.child('rooms').child($room).child('round').child('phase').val() === 'stopped'",
+              ".validate": "newData.hasChildren(['name','answers','submittedAt'])",
+              "name": {
+                ".validate": "newData.isString() && newData.val().length <= 16"
+              },
+              "submittedAt": {
+                ".validate": "newData.isNumber()"
+              },
+              "answers": {
+                ".validate": "newData.hasChildren(['0','1','2','3','4'])",
+                "$index": {
+                  ".validate": "($index === '0' || $index === '1' || $index === '2' || $index === '3' || $index === '4') && newData.isString() && newData.val().length <= 24"
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        },
+        "review": {
+          ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && (auth != null && root.child('rooms').child($room).child('info').child('hostId').val() === auth.uid)"
+        },
+        "results": {
+          ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && (auth != null && root.child('rooms').child($room).child('info').child('hostId').val() === auth.uid)"
+        },
+        "totals": {
+          ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && (auth != null && root.child('rooms').child($room).child('info').child('hostId').val() === auth.uid)"
+        },
+        "reactions": {
+          ".read": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+          "$round": {
+            "$answer": {
+              "$reaction": {
+                ".write": "auth != null && root.child('rooms').child($room).child('players').child(auth.uid).exists() && $round === '' + root.child('rooms').child($room).child('round').child('round').val() && root.child('rooms').child($room).child('round').child('phase').val() === 'reviewing' && ($reaction === auth.uid + '_laugh' || $reaction === auth.uid + '_annoy')",
+                ".validate": "newData.val() === true"
+              }
+            }
+          }
+        },
+        ".validate": "$room.matches(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/)"
+      }
+    }
+  }
+}

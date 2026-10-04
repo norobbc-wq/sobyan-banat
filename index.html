@@ -131,11 +131,11 @@
     </div>
     <div id="home-form" style="display:none; margin-top:16px;">
       <div class="card">
-        <label>اسمك (استخدم نفس الاسم دائماً للعودة بنقاطك)</label>
+        <label>اسمك (تُحفظ هويتك على هذا الجهاز والمتصفح)</label>
         <input type="text" id="input-name" placeholder="مثال: أحمد" maxlength="16">
         <div id="join-code-wrap" style="display:none;">
           <label>رمز الغرفة</label>
-          <input type="text" id="input-code" class="code-input" placeholder="XXXX" maxlength="4">
+          <input type="text" id="input-code" class="code-input" placeholder="XXXXXXXX" maxlength="8">
         </div>
       </div>
       <button class="btn btn-primary" id="btn-go" disabled>متابعة</button>
@@ -146,7 +146,7 @@
   <!-- LOBBY -->
   <div class="screen" id="screen-lobby">
     <div class="eyebrow">رمز الغرفة (شاركه مع البقية)</div>
-    <div class="room-code" id="lobby-code">----</div>
+    <div class="room-code" id="lobby-code">--------</div>
     <p class="sub" style="text-align:center;">كل شخص يفتح هذه الصفحة على هاتفه ويدخل نفس الرمز للانضمام.</p>
     <div class="card">
       <label>اللاعبون المنضمّون (<span id="lobby-count">0</span>)</label>
@@ -232,23 +232,49 @@
 (function(){
   "use strict";
 
-  // ======== Firebase Realtime Database (REST, no SDK needed) ========
+  // Firebase authentication identifies players without registration.
   var DB_URL = 'https://sobyan-banat-game-default-rtdb.europe-west1.firebasedatabase.app';
 
+  var authPromise = null;
+  async function ensureAuth(){
+    if (!authPromise){
+      authPromise = (async function(){
+        var modules = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js')
+        ]);
+        var app = modules[0].initializeApp({
+          apiKey: 'AIzaSyBSD2XvGrheeAGaG3fjuY6IiqM6ak87D2I',
+          authDomain: 'sobyan-banat-game.firebaseapp.com',
+          projectId: 'sobyan-banat-game',
+          appId: '1:160668616310:web:f521a48c915bfa09588157'
+        });
+        var auth = modules[1].getAuth(app);
+        await auth.authStateReady();
+        if (!auth.currentUser) await modules[1].signInAnonymously(auth);
+        return auth.currentUser;
+      })().catch(function(error){ authPromise = null; throw error; });
+    }
+    return authPromise;
+  }
+  async function fbUrl(path){
+    var user = await ensureAuth();
+    return DB_URL + '/' + path + '.json?auth=' + encodeURIComponent(await user.getIdToken());
+  }
   function fbPath(){
     return Array.prototype.slice.call(arguments).map(function(s){ return encodeURIComponent(String(s)); }).join('/');
   }
   async function fbGet(path){
     try{
-      var res = await fetch(DB_URL + '/' + path + '.json');
+      var res = await fetch(await fbUrl(path));
       if (!res.ok) return null;
       return await res.json();
     }catch(e){ console.error('fbGet failed', path, e); return null; }
   }
-  async function fbSet(path, value){
+  async function fbSet(path, value, method){
     try{
-      var res = await fetch(DB_URL + '/' + path + '.json', {
-        method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(value)
+      var res = await fetch(await fbUrl(path), {
+        method:method || 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(value)
       });
       return res.ok;
     }catch(e){ console.error('fbSet failed', path, e); return false; }
@@ -266,12 +292,9 @@
 
   function genCode(){
     var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s='';
-    for (var i=0;i<4;i++) s += chars[Math.floor(Math.random()*chars.length)];
-    return s;
-  }
-  function slugifyName(name){
-    var s = (name||'').trim().replace(/[.#$\/\[\]]/g, '_');
-    if (!s) s = 'p'+Math.random().toString(36).slice(2,7);
+    var bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    for (var i=0;i<8;i++) s += chars[bytes[i] % chars.length];
     return s;
   }
   function normAlif(ch){ return ('أإآا'.indexOf(ch)>=0) ? 'ا' : ch; }
@@ -338,7 +361,7 @@
   });
   function checkHomeReady(){
     var ok = inputName.value.trim().length>0;
-    if (mode==='join') ok = ok && inputCode.value.trim().length===4;
+    if (mode==='join') ok = ok && inputCode.value.trim().length===8;
     btnGo.disabled = !ok;
   }
   inputName.addEventListener('input', checkHomeReady);
@@ -349,14 +372,29 @@
 
   btnGo.addEventListener('click', async function(){
     myName = inputName.value.trim();
-    myId = slugifyName(myName);
     btnGo.disabled = true;
     homeError.style.display = 'none';
+
+    try {
+      myId = (await ensureAuth()).uid;
+    } catch(error) {
+      console.error('Anonymous sign-in failed', error.code);
+      homeError.textContent = 'تعذّر تسجيل الدخول للّعب. تأكد من اتصال الإنترنت وتفعيل الدخول المجهول في Firebase.';
+      homeError.style.display = 'block';
+      btnGo.disabled = false;
+      return;
+    }
 
     if (mode === 'create'){
       roomCode = genCode();
       isHost = true;
-      var ok1 = await fbSet(fbPath('rooms', roomCode, 'info'), {hostId:myId, hostName:myName, createdAt:Date.now()});
+      var ok1 = false;
+      for (var attempt = 0; attempt < 5 && !ok1; attempt++) {
+        roomCode = genCode();
+        var existing = await fbGet(fbPath('rooms', roomCode, 'info'));
+        if (existing) continue;
+        ok1 = await fbSet(fbPath('rooms', roomCode, 'info'), {hostId:myId, hostName:myName, createdAt:Date.now(), version:2});
+      }
       var ok2 = await fbSet(fbPath('rooms', roomCode, 'players', myId), {name:myName, joinedAt:Date.now()});
       if (!ok1 || !ok2){
         homeError.textContent = 'تعذّر الاتصال بقاعدة البيانات. تأكد من صحة الرابط في الكود.';
@@ -376,7 +414,19 @@
       }
       roomCode = code;
       isHost = (info.hostId === myId);
-      await fbSet(fbPath('rooms', roomCode, 'players', myId), {name:myName, joinedAt:Date.now()});
+      if (info.version !== 2) {
+        homeError.textContent = 'هذه غرفة قديمة. اطلب من المضيف إنشاء غرفة جديدة بعد تحديث الصفحة.';
+        homeError.style.display = 'block';
+        btnGo.disabled = false;
+        return;
+      }
+      var joined = await fbSet(fbPath('rooms', roomCode, 'players', myId), {name:myName, joinedAt:Date.now()});
+      if (!joined) {
+        homeError.textContent = 'تعذّر الانضمام. ربما بدأت الجولة بالفعل؛ اطلب من المضيف إنشاء غرفة جديدة.';
+        homeError.style.display = 'block';
+        btnGo.disabled = false;
+        return;
+      }
       enterLobby();
     }
   });
@@ -393,6 +443,8 @@
     btnStartRound.style.display = isHost ? 'block' : 'none';
     lobbyWaitMsg.style.display = isHost ? 'none' : 'block';
     show('screen-lobby');
+    lastPhase = null; lastRound = 0; submitted = false;
+    reviewValidity = null; hostReviewBuilt = {};
     startPolling();
   }
 
@@ -440,7 +492,15 @@
     pollTick();
   }
 
+  var pollBusy = false;
   async function pollTick(){
+    if (pollBusy) return;
+    pollBusy = true;
+    try { await pollState(); }
+    catch(error) { console.error('Game refresh failed'); }
+    finally { pollBusy = false; }
+  }
+  async function pollState(){
     if (!roomCode) return;
     if (screens['screen-lobby'].classList.contains('active')){
       var list = await refreshPlayers();
@@ -453,9 +513,9 @@
       lastPhase = round.phase;
       lastRound = round.round;
       submitted = false;
-      handlePhaseChange(round);
+      await handlePhaseChange(round);
     } else if (round.phase === 'stopped' && !submitted){
-      handlePhaseChange(round);
+      await handlePhaseChange(round);
     }
 
     if (isHost && round.phase === 'stopped'){
@@ -540,10 +600,11 @@
   }
 
   async function pickLetter(letter, round){
-    await fbSet(fbPath('rooms', roomCode, 'usedLetters', letter), true);
-    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {
-      phase:'playing', letter:letter, playingStartAt: Date.now()
-    }));
+    if (!round || round.phase !== 'choosing' || round.starterId !== myId) return;
+    var changes = {};
+    changes['usedLetters/' + letter] = true;
+    changes.round = Object.assign({}, round, {phase:'playing', letter:letter, playingStartAt:Date.now()});
+    if (!await fbSet(fbPath('rooms', roomCode), changes, 'PATCH')) toast('تعذّر بدء الجولة. حاول مجدداً.');
   }
 
   // ---------- PLAY ----------
@@ -591,9 +652,10 @@
     if (submitted) return;
     submitted = true;
     if (elapsedHandle) clearInterval(elapsedHandle);
-    await fbSet(fbPath('rooms', roomCode, 'submissions', round.round, myId), {
+    var sent = await fbSet(fbPath('rooms', roomCode, 'submissions', round.round, myId), {
       name: myName, answers: pendingAnswers.slice(), submittedAt: Date.now()
     });
+    if (!sent) { submitted = false; toast('تعذّر إرسال الإجابات. نحاول مجدداً...'); return; }
     document.getElementById('wait-submit-sub').textContent =
       round.stopPressedBy === myId ? 'أنت من قال STOP! بانتظار إرسال البقية...' : 'قال أحدهم STOP! جارٍ إرسال الإجابات...';
     show('screen-wait-submit');
@@ -610,6 +672,7 @@
     var elapsedSinceStop = Date.now() - (round.stopAt||Date.now());
     if (count < playersCache.length && elapsedSinceStop < 6000) return;
     hostReviewBuilt[rk] = true;
+    await refreshPlayers();
 
     var validity = {};
     CATS.forEach(function(cat, ci){
@@ -620,11 +683,13 @@
         validity[ci][p.id] = startsWithLetter(w, round.letter);
       });
     });
-    await fbSet(fbPath('rooms', roomCode, 'review', round.round), {
+    var changes = {};
+    changes['review/' + round.round] = {
       letter: round.letter, submissions: subs, validity: validity,
       players: playersCache.map(function(p){ return {id:p.id, name:p.name}; })
-    });
-    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {phase:'reviewing'}));
+    };
+    changes.round = Object.assign({}, round, {phase:'reviewing'});
+    if (!await fbSet(fbPath('rooms', roomCode), changes, 'PATCH')) hostReviewBuilt[rk] = false;
   }
 
   // ---------- REVIEW ----------
@@ -730,9 +795,16 @@
   }
 
   btnComputeScores.addEventListener('click', async function(){
+    if (btnComputeScores.disabled) return;
+    btnComputeScores.disabled = true;
+    try { await computeScores(); }
+    finally { btnComputeScores.disabled = false; }
+  });
+  async function computeScores(){
     var round = await fbGet(fbPath('rooms', roomCode, 'round'));
+    if (!round || round.phase !== 'reviewing') return;
     var data = await fbGet(fbPath('rooms', roomCode, 'review', round.round));
-    if (!round || !data) return;
+    if (!data) return;
     var validity = reviewValidity || data.validity;
 
     var perPlayerScores = {};
@@ -764,11 +836,11 @@
       totals[p.id] = { name: p.name, score: prevScore + roundTotal };
     });
 
-    await fbSet(fbPath('rooms', roomCode, 'results', round.round), roundResult);
-    await fbSet(fbPath('rooms', roomCode, 'totals'), totals);
-    await fbSet(fbPath('rooms', roomCode, 'round'), Object.assign({}, round, {phase:'results'}));
-    reviewValidity = null;
-  });
+    var changes = {totals:totals, round:Object.assign({}, round, {phase:'results'})};
+    changes['results/' + round.round] = roundResult;
+    if (await fbSet(fbPath('rooms', roomCode), changes, 'PATCH')) reviewValidity = null;
+    else toast('تعذّر حفظ النقاط. حاول مجدداً.');
+  }
 
   // ---------- RESULTS ----------
   var resultsTitle = document.getElementById('results-title');
@@ -868,3 +940,4 @@
 </script>
 </body>
 </html>
+
